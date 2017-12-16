@@ -7,7 +7,7 @@ This application serves two purposes:
 3. Serve as an actual application which might be useful to track Bitcoin information for yourself or your friends.
 
 
-## Building
+### Building
 Just run
 
 ```
