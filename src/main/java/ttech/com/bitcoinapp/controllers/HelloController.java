@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import ttech.com.bitcoinapp.TokenVerifyer;
 import ttech.com.bitcoinapp.models.*;
 
 import com.auth0.jwt.JWT;
@@ -90,25 +92,17 @@ public class HelloController {
 	@ResponseBody
 	public  User getUser(@PathVariable int id, @RequestHeader("Authorization") String auth)
 	{
-		// We secure this with our token
-		String token = auth.split(" ")[1];
-		System.out.println("token: " + token);
-		try {
-			Algorithm algorithmHS = Algorithm.HMAC256("ferkl");
-			JWTVerifier verifier = JWT.require(algorithmHS)
-			        .withIssuer("ttech")
-			        .build(); //Reusable verifier instance
-			    DecodedJWT jwt = verifier.verify(token);
-			    Claim username = jwt.getClaim("username");
-			    System.out.println("username: " + username.asString());
-			
-		} catch (IllegalArgumentException | UnsupportedEncodingException e) {
-			e.printStackTrace();
+		if (TokenVerifyer.VerifyToken(auth)) 
+		{
+			User u = new User();
+			u.setFirstName("tom");
+			u.setLastName("miller");
+			return u;
 		}
+		
 		User u = new User();
-		u.setFirstName("tom");
-		u.setLastName("miller");
 		return u;
+		
 	}
 
 }

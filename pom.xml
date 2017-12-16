@@ -71,8 +71,7 @@
 		    <artifactId>maven-war-plugin</artifactId>
 		    <version>3.2.0</version>
 		    <configuration>
-		    	<!--< outputDirectory>D:\Projects\Java\apache-tomcat-9.0.1\webapps</outputDirectory>-->
-		        <webResources>
+		    	<webResources>
 		            <resource>
 		              <!-- this is relative to the pom.xml directory -->
 		              <directory>src/main/frontend/</directory>
@@ -84,6 +83,18 @@
 		            </resource>
           		</webResources>
 		    </configuration>
+		    <executions>
+		    	<execution>
+		            <id>additional-war</id>
+		            <phase>package</phase>
+		            <goals>
+		              <goal>war</goal>
+		            </goals>
+		            <configuration>
+		        		<outputDirectory>D:\Projects\Java\apache-tomcat-9.0.1\webapps</outputDirectory>	
+		            </configuration>
+		        </execution>
+		    </executions>
 		</plugin>
 		  		<plugin>
 	  		<groupId>com.github.eirslett</groupId>
