@@ -2,6 +2,7 @@ package ttech.com.bitcoinapp.controllers;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,15 +18,35 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jasypt.util.digest.*;
 import org.jasypt.util.password.BasicPasswordEncryptor;
 import org.jasypt.util.password.StrongPasswordEncryptor;
 
+import ttech.com.bitcoinapp.TokenVerifyer;
+import ttech.com.bitcoinapp.dal.DBConnectionProvider;
 import ttech.com.bitcoinapp.models.*;
 
 @Controller
 public class CustomerController {
+	
+	
+	@RequestMapping(value="/transactions", method = RequestMethod.GET)
+	@ResponseBody
+	public List<BCTransaction> getTransactions(@RequestHeader("Authorization") String auth)
+	{
+		// TODO load transactions from database
+		if (!TokenVerifyer.verifyToken(auth))
+		{
+			return new ArrayList<>();
+		}
+		
+		
+		return null;
+	}
+	
 	
 	@RequestMapping(value="/foobar", method = RequestMethod.POST)
 	@ResponseBody
@@ -34,8 +55,7 @@ public class CustomerController {
 		Connection conn = null;
 
 		try {
-			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			conn = DriverManager.getConnection(System.getenv("db_conn_string"));
+			conn = DBConnectionProvider.dbConnection();
 
 			/*
 			 * String sql =
@@ -55,7 +75,7 @@ public class CustomerController {
 			return "{\"exception\":\"" + ex + "\"}";
 		} finally {
 			try {
-				// conn.close();
+				conn.close();
 			} catch (Exception ex) {
 				return "close error";
 			}
@@ -68,7 +88,6 @@ public class CustomerController {
 	@RequestMapping(value = "/signup", method = RequestMethod.POST)
 	@ResponseBody
 	public String signup(@RequestBody Customer customer) {
-		String firstName = customer.getFirstName();
 		String password = customer.getPassword();
 		StrongPasswordEncryptor basicPasswordEncryptor = new StrongPasswordEncryptor();
 		String encryptedPassword = basicPasswordEncryptor.encryptPassword(password);
@@ -77,8 +96,8 @@ public class CustomerController {
 		Connection conn = null;
 
 		try {
-			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			conn = DriverManager.getConnection(System.getenv("db_conn_string"));
+			
+			conn = DBConnectionProvider.dbConnection();
 
 			String sql = "INSERT into customer(first_name, last_name, user_name, password) VALUES(?, ?, ?, ?)";
 			PreparedStatement stmt = conn.prepareStatement(sql);
@@ -86,8 +105,6 @@ public class CustomerController {
 			stmt.setString(2, customer.getLastName());
 			stmt.setString(3, customer.getUserName());
 			stmt.setString(4, encryptedPassword);
-
-			int rowsAffected = stmt.executeUpdate();
 
 			stmt.close();
 
@@ -103,6 +120,64 @@ public class CustomerController {
 
 		return "{\"result\": \"ok\"}";
 	}
+	
+	
+	@RequestMapping(value = "/signin2", method = RequestMethod.POST)
+	@ResponseBody
+	public String signin(@RequestBody Customer user) {
+		System.out.println("username: " + user.getUserName());
+
+		Connection conn = null;
+
+		try {
+			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+			String dbConnString = System.getenv("db_conn_string");
+			conn = DriverManager.
+					getConnection(dbConnString);
+
+			StrongPasswordEncryptor passwordEncryptor = new StrongPasswordEncryptor();
+			String encryptedPassword = passwordEncryptor.encryptPassword(user.getPassword());
+			System.out.println("encrypted provided pw: " + encryptedPassword);
+
+			String sql = "SELECT password from customer where user_name = ?";
+			PreparedStatement stmt = conn.prepareStatement(sql);
+			stmt.setString(1, user.getUserName());
+
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				String dbpw = rs.getString(1);
+				if (passwordEncryptor.checkPassword(user.getPassword(), dbpw)) {
+					System.out.println("login ok");
+
+					try {
+						String token = TokenVerifyer.createToken(user.getUserName());
+
+						return "{\"token\":\"" + token + "\"}";
+
+					} catch (Exception e) {
+
+						e.printStackTrace();
+					} finally {
+						try {
+							conn.close();
+						} catch (SQLException e) {
+
+						}
+					}
+
+				} else {
+					System.out.println("login FAILED!");
+				}
+			}
+
+		} catch (Exception ex) {
+			System.out.println("ex: " + ex);
+			return "{\"success\": \"" + ex.getMessage() + "\"}";
+		}
+
+		return "{\"success\":0}";
+	}
+	
 
 	@RequestMapping(value = "/signin", method = RequestMethod.POST)
 	@ResponseBody
@@ -131,9 +206,7 @@ public class CustomerController {
 					System.out.println("login ok");
 
 					try {
-						Algorithm algorithmHS = Algorithm.HMAC256("ferkl");
-						String token = JWT.create().withIssuer("ttech").withClaim("username", username)
-								.withClaim("isAdmin", false).sign(algorithmHS);
+						String token = TokenVerifyer.createToken(username);
 
 						return "{\"token\":\"" + token + "\"}";
 
@@ -155,7 +228,8 @@ public class CustomerController {
 
 		} catch (Exception ex) {
 			System.out.println("ex: " + ex);
-			return "{\"success\": 0}";
+			
+			return "{\"success\": \"" + ex + "\"}";
 		}
 
 		return "{\"success\":0}";

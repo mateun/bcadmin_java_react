@@ -38,7 +38,15 @@ public class TokenVerifyer {
 		return _verifier;
 	}
 	
-	public static boolean VerifyToken(String authHeader) 
+	public static String createToken(String username) 
+	{
+		return JWT.create()
+		.withIssuer("ttech")
+		.withClaim("username", username)
+		.sign(TokenVerifyer.algorithm());
+	}
+	
+	public static boolean verifyToken(String authHeader) 
 	{
 		
 		if (authHeader.split(" ").length < 2) {

@@ -59,23 +59,11 @@ public class HelloController {
 		}
 				
 		
-		try {
-			Algorithm algorithmHS = Algorithm.HMAC256("ferkl");
-			String token = JWT.create()
-							.withIssuer("ttech")
-							.withClaim("username", "franky")
-							.withClaim("isAdmin", true)
-							.withClaim("canCancelOrders", true)
-							.sign(algorithmHS);
-			
+		String token = TokenVerifyer.createToken("");
+		if (token != null)
 			return "{\"token\":\"" + token + "\"}";
-			
-		} catch (IllegalArgumentException | UnsupportedEncodingException e) {
-			
-			e.printStackTrace();
-		}
-		
-		return "{\"success\":0}";
+		return"{\"success\":0}"; 
+		 
 	}
 	
 	@RequestMapping(value="/user_standalone", method = RequestMethod.GET)
@@ -92,7 +80,7 @@ public class HelloController {
 	@ResponseBody
 	public  User getUser(@PathVariable int id, @RequestHeader("Authorization") String auth)
 	{
-		if (TokenVerifyer.VerifyToken(auth)) 
+		if (TokenVerifyer.verifyToken(auth)) 
 		{
 			User u = new User();
 			u.setFirstName("tom");
