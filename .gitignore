@@ -1,0 +1,10 @@
+target/
+node/
+node_modules/
+build/
+*.log
+lib/
+*.project
+*.classpath
+*.settings
+WebContent/
