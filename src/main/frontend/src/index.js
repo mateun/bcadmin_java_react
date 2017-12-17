@@ -1,17 +1,17 @@
 import React from 'react';
 import axios from 'axios';
 import ReactDOM from 'react-dom';
-import { BrowserRouter, Switch, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Switch, Route, Link, Redirect } from 'react-router-dom';
 
 class LoginForm extends React.Component
 {
 	constructor(props) {
 		super(props);
-		console.log("history: " + props.history);
+		console.log("history: " + props.navihist);
 		this.state = {
 				username: 'test',
 				password: '',
-				history: props.history
+				history: props.navihist
 		}
 		console.log("in ctr: " + this.state.username);
 		
@@ -23,29 +23,7 @@ class LoginForm extends React.Component
 	handleSubmit(event) {
 	  console.log("logging in! " + this.state.username + ":" + this.state.password);
 	  
-		axios.post('/BitCoinAdmin/signin2', {
-		    userName: this.state.username,
-		    password: this.state.password
-		  })
-		  .then((response) => {
-		    console.log("response: " + response);
-		    if (response.data.token != undefined) {
-		      localStorage.setItem('jwt_token', response.data.token);
-		      console.log("logged in!");
-		      this.state.history.push("/transactions");
-		    } else {
-		      console.log("login nok! wrong credentials?!");
-		      this.state.history.push("/home");
-		    }
-		    
-		    
-		    
-		    
-		  })
-		  .catch(function (error) {
-		    console.log("error: " + error);
-		    
-		  });
+		
 		
 		event.preventDefault();
 	}
@@ -64,7 +42,7 @@ class LoginForm extends React.Component
 		  <div>
 				<input type="text" value={this.state.username} onChange = {this.handleUsername} />
 				<input type="password" value={this.state.password} onChange = {this.handlePassword} />
-				<button onClick={this.handleSubmit}> Login</button>
+				<button onClick={() => this.props.onLoginTry(this.state.username, this.state.password)}> Login</button>
 			
 			</div>
 		);
@@ -72,26 +50,113 @@ class LoginForm extends React.Component
 	}
 }
 
-const App = () => (
-	<div>
-		<Header/>
-		<Main/>
-	</div>
-)
-
-const Header = () => (
-    <header>
-      <nav>
-        <ul>
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/login">Login</Link></li>
-          <li><Link to="/transactions">Transactions</Link></li>
-        </ul>
-      
-      </nav>
-    </header>
+class LoginState extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { loggedIn : false};
+  }
+  
+  render() {
+    return (
+        <div>
+          <div>{this.state.loggedIn}</div>
+        </div>
+    )
+  }
+}
+  
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { 
+        userLoggedIn : false,
+        history: props.history
+        };
     
-)
+    this.handleLoginTry = this.handleLoginTry.bind(this);
+    console.log("props history: " + props.history);
+    
+  }
+  
+  handleLoginTry(username, password) {
+    console.log("event bubbled up!");
+    
+    axios.post('/BitCoinAdmin/signin2', {
+      userName: username,
+      password: password
+    })
+    .then((response) => {
+      console.log("response: " + response);
+      if (response.data.token != undefined) {
+        localStorage.setItem('jwt_token', response.data.token);
+        console.log("logged in!");
+        this.setState({userLoggedIn : true });
+        this.state.history.push("/transactions");
+      } else {
+        console.log("login nok! wrong credentials?!");
+        this.setState({userLoggedIn : false });
+        this.state.history.push("/");
+      }
+      
+    })
+    .catch(function (error) {
+      console.log("error: " + error);
+      
+    });
+    
+    
+  }
+  
+  render() {
+   return (
+       <div>
+         <Header userLoggedIn={ this.state.userLoggedIn }/>
+         <Main handleLoginTry={ this.handleLoginTry } />
+       </div>
+   ) 
+    
+  }
+	
+}
+
+class LogoutForm extends React.Component {
+  
+  render() {
+    localStorage.removeItem("jwt_token");
+    return <Redirect to="/" />;
+  }
+}
+
+class Header extends React.Component {
+    constructor(props) {
+      super(props);
+    }
+    
+    render() {
+      
+      var loginPath = "/login";
+      var pathLabel = "Login";
+      if (this.props.userLoggedIn ) {
+        loginPath = "/logout";
+        pathLabel = "Logout";
+      }
+      
+      console.log("loginPath: " + loginPath);
+      
+      return (
+        <header>
+          <nav>
+            <ul>
+              <li><Link to="/">Home</Link></li>
+              <li><Link to={loginPath}>{pathLabel}</Link></li>
+              <li><Link to="/transactions">Transactions</Link></li>
+            </ul>
+          
+          </nav>
+        </header>
+      )
+    }        
+}
 
 const Home = () => (
     <div>
@@ -105,15 +170,37 @@ const TransactionsOverview = () => (
     </div>
 )
 
-const Main = () => (
-    <main>
-      <Switch>
-        <Route exact path="/" component={Home} />
-        <Route exact path="/login" component={LoginForm} />
-        <Route exact path="/transactions" component={TransactionsOverview} />
-      </Switch>
-    </main>		
-)
+class Main extends React.Component {
+  constructor(props) {
+    super(props);
+    this.setState = { 
+        userLoggedIn : false,
+    };
+  }
+  
+  
+  
+  render() {
+    
+    return (
+      <main>
+        <Switch>
+          <Route exact path="/" component={Home} />
+          <Route exact path="/login" render= {(history) => (
+              <LoginForm onLoginTry={this.props.handleLoginTry} navihist={history} />
+           )} 
+          />
+          <Route exact path="/logout" component={LogoutForm} />
+          <Route exact path="/transactions" component={TransactionsOverview} />
+        </Switch>
+      </main>   
+    
+    
+    )
+    
+  }
+  
+}
 
 
 class Fetcher extends React.Component {
@@ -151,7 +238,7 @@ class Fetcher extends React.Component {
 
 ReactDOM.render((
 	<BrowserRouter>
-  	  <App/>
+  	  <Route component={App} />
   	</BrowserRouter>
 	),document.getElementById('root')
 );
