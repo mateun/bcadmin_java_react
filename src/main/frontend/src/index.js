@@ -1,14 +1,17 @@
 import React from 'react';
 import axios from 'axios';
 import ReactDOM from 'react-dom';
+import { BrowserRouter, Switch, Route, Link } from 'react-router-dom';
 
 class LoginForm extends React.Component
 {
 	constructor(props) {
 		super(props);
+		console.log("history: " + props.history);
 		this.state = {
 				username: 'test',
-				password: ''
+				password: '',
+				history: props.history
 		}
 		console.log("in ctr: " + this.state.username);
 		
@@ -18,18 +21,30 @@ class LoginForm extends React.Component
 	}
 	
 	handleSubmit(event) {
-		console.log("logging in! " + this.state.username + ":" + this.state.password);
-		
+	  console.log("logging in! " + this.state.username + ":" + this.state.password);
+	  
 		axios.post('/BitCoinAdmin/signin2', {
 		    userName: this.state.username,
 		    password: this.state.password
 		  })
-		  .then(function (response) {
+		  .then((response) => {
 		    console.log("response: " + response);
-		    localStorage.setItem('jwt_token', response.data.token);
+		    if (response.data.token != undefined) {
+		      localStorage.setItem('jwt_token', response.data.token);
+		      console.log("logged in!");
+		      this.state.history.push("/transactions");
+		    } else {
+		      console.log("login nok! wrong credentials?!");
+		      this.state.history.push("/home");
+		    }
+		    
+		    
+		    
+		    
 		  })
 		  .catch(function (error) {
 		    console.log("error: " + error);
+		    
 		  });
 		
 		event.preventDefault();
@@ -46,7 +61,7 @@ class LoginForm extends React.Component
 	render() {
 		
 		return (
-			<div>
+		  <div>
 				<input type="text" value={this.state.username} onChange = {this.handleUsername} />
 				<input type="password" value={this.state.password} onChange = {this.handlePassword} />
 				<button onClick={this.handleSubmit}> Login</button>
@@ -56,6 +71,50 @@ class LoginForm extends React.Component
 		
 	}
 }
+
+const App = () => (
+	<div>
+		<Header/>
+		<Main/>
+	</div>
+)
+
+const Header = () => (
+    <header>
+      <nav>
+        <ul>
+          <li><Link to="/">Home</Link></li>
+          <li><Link to="/login">Login</Link></li>
+          <li><Link to="/transactions">Transactions</Link></li>
+        </ul>
+      
+      </nav>
+    </header>
+    
+)
+
+const Home = () => (
+    <div>
+      <h1>Welcome to the BitcoinAdmin app!</h1>
+    </div>
+)
+
+const TransactionsOverview = () => (
+    <div>
+      <h1>Transactions Overview!</h1>
+    </div>
+)
+
+const Main = () => (
+    <main>
+      <Switch>
+        <Route exact path="/" component={Home} />
+        <Route exact path="/login" component={LoginForm} />
+        <Route exact path="/transactions" component={TransactionsOverview} />
+      </Switch>
+    </main>		
+)
+
 
 class Fetcher extends React.Component {
 	constructor(props) {
@@ -90,7 +149,9 @@ class Fetcher extends React.Component {
 	}
 }
 
-ReactDOM.render(
-  <LoginForm/>,
-  document.getElementById('root')
+ReactDOM.render((
+	<BrowserRouter>
+  	  <App/>
+  	</BrowserRouter>
+	),document.getElementById('root')
 );

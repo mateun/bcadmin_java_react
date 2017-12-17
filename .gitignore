@@ -8,3 +8,4 @@ lib/
 *.classpath
 *.settings
 WebContent/
+bundle.js
