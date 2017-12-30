@@ -81,7 +81,7 @@ class App extends React.Component {
   handleLoginTry(username, password) {
     console.log("event bubbled up!");
     
-    axios.post('/BitCoinAdmin/signin2', {
+    axios.post('/signin2', {
       userName: username,
       password: password
     })
@@ -147,7 +147,7 @@ class Header extends React.Component {
         <header>
           <nav>
             <ul>
-              <li><Link to="/">Home</Link></li>
+              <li><Link to="/">Home _ changed</Link></li>
               <li><Link to={loginPath}>{pathLabel}</Link></li>
               <li><Link to="/transactions">Transactions</Link></li>
             </ul>
