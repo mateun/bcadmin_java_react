@@ -84,7 +84,7 @@
           		</webResources>
 		    </configuration>
 		    <executions>
-		    	<execution>
+		    	<!-- <execution>
 		            <id>additional-war</id>
 		            <phase>package</phase>
 		            <goals>
@@ -93,7 +93,7 @@
 		            <configuration>
 		        		<outputDirectory>D:\Projects\Java\apache-tomcat-9.0.1\webapps</outputDirectory>	
 		            </configuration>
-		        </execution>
+		        </execution>-->
 		    </executions>
 		</plugin>
 		  		<plugin>
